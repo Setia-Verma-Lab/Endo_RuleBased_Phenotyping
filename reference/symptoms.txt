@@ -1,0 +1,39 @@
+Persistent and/or worsening cyclic or constant pelvc pain - YES: abdominal pelvic pain, lower abdominal pain
+
+Dysmenorrhea - YES
+
+Deep dyspareunia - pain_with_sex - YES
+
+Cyclic dyschezia - NO...but I do have whether they have IBS? feels cheating to use that (IGNORE)
+
+Cyclic dysuria - YES
+
+Cyclic catemenial symptoms located in other systems (e.g., lung, skin) - NO/IGNORE?
+
+Infertility - YES
+
+Dysmenorrhea in adolescence (can use age to infer this? IGNORE); current chronic pelvic pain - NO (chronic pelvic peritonitis?? just use as proxy if it's near current age?)
+
+Previous laproscopy with diagnosis - IGNORE
+
+Dysmenorrhea unresponsive to nonsteroidal anti-inflammatory drugs - NO
+
+Positive family history - IGNORE
+
+Ignoring physical examination + imaging symptoms, as well as patient history (surgery, family histroy)
+
+Consider other diagnosis in addition to endometriosis:
+Severe pain, amenorrhea, or cramping without menstruation in an adolescent (reproductive tract anomaly) - NO
+
+Concomitant symptoms: 
+- severe noncyclic constipation and diarrhea suggests irritable bowel syndrome
+- painful voiding (dysuria) or flank pain could suggest urinary tract stones
+- urinary symptoms (e.g., hematuria, frequence urination) could indicate interstitial cystitis/painful bladder syndrome
+^ I have the concomitant diagnoses (IBS and interstitial cystitis) -> but not the underlying symptoms
+
+Absence of menses or other obstructive conditions in adolescence -> NO: need amenorrhea symptoms?
+
+History of pain directly associated with surgery (e.g., post-operative nerve entrapment or injury, bowel adhesions) - IGNORE
+
+adenomyosis & fibroids (may be present with endometriosis)
+- have adeno...should I use this in the rules? yes. 
