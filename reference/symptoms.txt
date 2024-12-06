@@ -4,7 +4,7 @@ Dysmenorrhea - YES
 
 Deep dyspareunia - pain_with_sex - YES
 
-Cyclic dyschezia - NO...but I do have whether they have IBS? feels cheating to use that (IGNORE)
+Cyclic dyschezia - NO...but I do have whether they have IBS? feels cheating to use that (IGNORE) -> added constipation
 
 Cyclic dysuria - YES
 
@@ -16,17 +16,17 @@ Dysmenorrhea in adolescence (can use age to infer this? IGNORE); current chronic
 
 Previous laproscopy with diagnosis - IGNORE
 
-Dysmenorrhea unresponsive to nonsteroidal anti-inflammatory drugs - NO
+Dysmenorrhea unresponsive to nonsteroidal anti-inflammatory drugs - NO (iGNORE)
 
 Positive family history - IGNORE
 
 Ignoring physical examination + imaging symptoms, as well as patient history (surgery, family histroy)
 
 Consider other diagnosis in addition to endometriosis:
-Severe pain, amenorrhea, or cramping without menstruation in an adolescent (reproductive tract anomaly) - NO
+Severe pain, amenorrhea, or cramping without menstruation in an adolescent (reproductive tract anomaly) - NO - just got for amenorrhea, not ICD codes for others
 
 Concomitant symptoms: 
-- severe noncyclic constipation and diarrhea suggests irritable bowel syndrome
+- severe noncyclic constipation and diarrhea suggests irritable bowel syndrome - got both, 
 - painful voiding (dysuria) or flank pain could suggest urinary tract stones
 - urinary symptoms (e.g., hematuria, frequence urination) could indicate interstitial cystitis/painful bladder syndrome
 ^ I have the concomitant diagnoses (IBS and interstitial cystitis) -> but not the underlying symptoms
@@ -37,3 +37,11 @@ History of pain directly associated with surgery (e.g., post-operative nerve ent
 
 adenomyosis & fibroids (may be present with endometriosis)
 - have adeno...should I use this in the rules? yes. 
+
+the symptoms I'm missing then are:
+amenorrhea - added
+constipation - added - same thing with IBS, as well as unspecified
+diarrhea - same thing for IBS with diarreha, but also nonspecified diarrhea
+flank pain - added
+hematuria - used 'interstitial cystitis with hematuria' because general hematuria would've excluded
+frequent urination - added

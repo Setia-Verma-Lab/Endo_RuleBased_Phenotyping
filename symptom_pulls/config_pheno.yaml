@@ -165,6 +165,19 @@ pheno_defs:
     icd10_cases: ['F10']
   alcohol_dependence:
     icd10_cases: ['F10.2']
+  constipation:
+    icd10_cases: ['K59.00', 'K58.1']
+  diarrhea:
+    icd10_cases: ['R19.7', 'K59.1', 'K58.0']
+  amenorrhea:
+    icd10_cases: ['N91.0']
+  flank_pain:
+    icd10_cases: ['R10.9']
+  frequent_urination:
+    icd10_cases: ['R35.0']
+  hematuria:
+    icd10_cases: ['N30.11']
+
 
 keep_covars: ['AGE', 'SEX', 'BMI', 'BP']
 keep_PCs: 10
