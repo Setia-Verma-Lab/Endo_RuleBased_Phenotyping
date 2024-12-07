@@ -1,10 +1,11 @@
-# import clips
-# import sys
-# sys.path.append('./src/')
-# from clips_util import print_facts, print_rules, print_templates, build_read_assert
+import clips
+import pandas as pd
+import sys
+sys.path.append('./src/')
+from clips_util import print_facts, print_rules, print_templates, build_read_assert
 
-# # create the CLIPS environment
-# env = clips.Environment()
+# create the CLIPS environment
+env = clips.Environment()
 
 # # basic patient information
 # DEFTEMPLATE_PATIENT = """
@@ -171,42 +172,187 @@
 
 
 
-import clips
+# DEFTEMPLATE_STRING = """
+# (deftemplate person
+#   (slot name (type STRING))
+#   (slot surname (type STRING))
+#   (slot birthdate (type SYMBOL)))
+# """
 
-DEFTEMPLATE_STRING = """
-(deftemplate person
-  (slot name (type STRING))
-  (slot surname (type STRING))
-  (slot birthdate (type SYMBOL)))
-"""
+# DEFRULE_STRING = """
+# (defrule hello-world
+#   "Greet a new person."
+#   (person (name ?name) (surname ?surname))
+#   =>
+#   (println "Hello " ?name " " ?surname))
+# """
 
-DEFRULE_STRING = """
-(defrule hello-world
-  "Greet a new person."
-  (person (name ?name) (surname ?surname))
-  =>
-  (println "Hello " ?name " " ?surname))
-"""
+# environment = clips.Environment()
 
-environment = clips.Environment()
+# # define constructs
+# environment.build(DEFTEMPLATE_STRING)
+# environment.build(DEFRULE_STRING)
 
-# define constructs
-environment.build(DEFTEMPLATE_STRING)
-environment.build(DEFRULE_STRING)
+# # retrieve the fact template
+# template = environment.find_template('person')
 
-# retrieve the fact template
-template = environment.find_template('person')
+# # assert a new fact through its template
+# fact = template.assert_fact(name='John',
+#                             surname='Doe',
+#                             birthdate=clips.Symbol('01/01/1970'))
 
-# assert a new fact through its template
-fact = template.assert_fact(name='John',
-                            surname='Doe',
-                            birthdate=clips.Symbol('01/01/1970'))
+# # fact slots can be accessed as dictionary elements
+# assert fact['name'] == 'John'
 
-# fact slots can be accessed as dictionary elements
-assert fact['name'] == 'John'
-
-# execute the activations in the agenda
-environment.run()
+# # execute the activations in the agenda
+# environment.run()
 
 # read in input from csv file
 
+# three outputs
+# calculate accuracy, PPV, NPV for each case
+
+# and ablation analysis
+
+data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
+
+data = pd.read_csv(data_file, sep=',', index_col='PMBB_ID')
+
+# print(data['chronic_pelvic_peritonitis'])
+
+# data_dict
+# patient age: CURRENT_AGE
+#
+
+# run each row at a time, then evaluate correctness and store in another object
+
+DEFTEMPLATE_PATIENT_ENDOMETRIOSIS_SYMPTOMS = """
+(deftemplate patient_endo_symptoms
+    (slot abdominal_pelvic_pain (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot dysmenorrhea (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot pain_with_sex (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot dyschezia (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot dysuria (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot infertility (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot pelvic_perineal_pain (type SYMBOL)
+        (allowed-symbols yes no unknown))
+
+    )
+"""
+env.build(DEFTEMPLATE_PATIENT_ENDOMETRIOSIS_SYMPTOMS)
+
+# patient concomitant disease symptoms
+DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS = """
+(deftemplate patient_concomitant_disease_symptoms
+    (slot amenorrhea (type SYMBOL) 
+        (allowed-symbols yes no unknown))
+    (slot constipation (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot diarrhea (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot flank_pain (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot hematuria (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot frequent_urination (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot adenomyosis (type SYMBOL)
+        (allowed-symbols yes no unknown))
+
+)
+"""
+env.build(DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS)
+
+# retrieve the fact templates
+patient_endo_template = env.find_template('patient_endo_symptoms')
+patient_concomitant_disease_template = env.find_template('patient_concomitant_disease_symptoms')
+
+# # Find distinct values and their range
+# NAME = 'infertility'
+# distinct_values = data[NAME].unique()
+# value_range = (distinct_values.min(), distinct_values.max())
+
+# print(f"Distinct values in {NAME}: {sorted(distinct_values)}")
+# print(f"Range of distinct values in {NAME}: {value_range}")
+
+evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0}
+
+def store_result(*args):
+    endo, other = args
+    if endo == "endo_0" and other == "other_0":
+        evaluation_dict['neither_endo_concomitant_predicted'] += 1
+    elif endo == "endo_0" and other == "other_1":
+        evaluation_dict['only_concomitant_predicted'] += 1
+    elif endo == "endo_1" and other == "other_0":
+        evaluation_dict['only_endo_predicted'] += 1
+    elif endo == "endo_1" and other == "other_1":
+        evaluation_dict['both_endo_concomitant_actual'] += 1
+
+env.define_function(store_result)
+
+for index, row in data.iterrows():
+    # resetting knowledge base each time
+    env.reset()
+
+    # split into endo and concomitant disease dicts
+    endo_data = data.loc[index, ['abdominal_pelvic_pain', 'dysmenorrhea', 'pain_with_sex', 'dyschezia', 'dysuria', 'infertility', 'pelvic_perineal_pain']]
+    additional_disease_data = data.loc[index, ['amenorrhea', 'constipation', 'diarrhea', 'flank_pain', 'hematuria', 'frequent_urination', 'adenomyosis']]
+
+
+    # create dictionary from current row, populated only with the symptoms I need
+    endo_dict = endo_data.to_dict()
+    other_diseases_dict = additional_disease_data.to_dict()
+
+    # convert all the data into types as clips Symbol: 0 -> no, 1 -> yes, '' -> unknown
+    for key, value in endo_dict.items():
+        curr_value = value
+        if curr_value == 0:
+            endo_dict[key] = clips.Symbol('no')
+        elif curr_value == 1:
+            endo_dict[key] = clips.Symbol('yes')
+        elif curr_value == '':
+            endo_dict[key] = clips.Symbol('unknown')
+            # this doesn't seem to ever get used but leaving it in for robustness
+
+    for key, value in other_diseases_dict.items():
+        curr_value = value
+        if curr_value == 0:
+            other_diseases_dict[key] = clips.Symbol('no')
+        elif curr_value == 1:
+            other_diseases_dict[key] = clips.Symbol('yes')
+        elif curr_value == '':
+            other_diseases_dict[key] = clips.Symbol('unknown')
+            # this doesn't seem to ever get used but leaving it in for robustness
+
+    # print(concom_dict)
+
+    # populate those into the templates using assert_fact
+    patient_endo_template.assert_fact(**endo_dict)
+    patient_concomitant_disease_template.assert_fact(**other_diseases_dict)
+
+    print("___________CURRENT FACTS___________")
+    print_facts(env)
+
+    # env.run()
+    # EVALUATION PART
+
+    results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
+    if results_data['endometriosis'] == 1 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        evaluation_dict['only_endo_actual'] += 1
+    elif results_data['endometriosis'] == 1 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        evaluation_dict['both_endo_concomitant_actual'] += 1
+    elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        evaluation_dict['neither_endo_concomitant_actual'] += 1
+    elif results_data['endometriosis'] == 0 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        evaluation_dict['only_concomitant_actual'] += 1
+
+print(f"{evaluation_dict['only_endo_predicted']}, {evaluation_dict['only_endo_actual']}")
+print(f"{evaluation_dict['only_concomitant_predicted']}, {evaluation_dict['only_concomitant_actual']}")
+print(f"{evaluation_dict['both_endo_concomitant_predicted']}, {evaluation_dict['both_endo_concomitant_actual']}")
+print(f"{evaluation_dict['neither_endo_concomitant_predicted']}, {evaluation_dict['neither_endo_concomitant_actual']}")
