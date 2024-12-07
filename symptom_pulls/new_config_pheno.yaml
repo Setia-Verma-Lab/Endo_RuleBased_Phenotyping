@@ -165,8 +165,10 @@ pheno_defs:
     icd10_cases: ['F10']
   alcohol_dependence:
     icd10_cases: ['F10.2']
+  dyschezia:
+    icd10_cases: ['K59.00']
   constipation:
-    icd10_cases: ['K59.00', 'K58.1']
+    icd10_cases: ['K58.1']
   diarrhea:
     icd10_cases: ['R19.7', 'K59.1', 'K58.0']
   amenorrhea:

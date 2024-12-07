@@ -4,7 +4,7 @@ Dysmenorrhea - YES
 
 Deep dyspareunia - pain_with_sex - YES
 
-Cyclic dyschezia - NO...but I do have whether they have IBS? feels cheating to use that (IGNORE) -> added constipation
+Cyclic dyschezia - NO...but I do have whether they have IBS? feels cheating to use that (YES) -> added constipation code which includes dyschezia
 
 Cyclic dysuria - YES
 
