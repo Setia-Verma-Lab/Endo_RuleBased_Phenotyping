@@ -4,227 +4,25 @@ import sys
 sys.path.append('./src/')
 from clips_util import print_facts, print_rules, print_templates, build_read_assert
 
+evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0}
+
+def store_result(*args):
+    endo, other = args
+    # print(endo)
+    # print(other)
+    if endo == "endo_0" and other == "other_0":
+        evaluation_dict['neither_endo_concomitant_predicted'] += 1
+    elif endo == "endo_0" and other == "other_1":
+        evaluation_dict['only_concomitant_predicted'] += 1
+    elif endo == "endo_1" and other == "other_0":
+        evaluation_dict['only_endo_predicted'] += 1
+    elif endo == "endo_1" and other == "other_1":
+        evaluation_dict['both_endo_concomitant_predicted'] += 1
+
 # create the CLIPS environment
 env = clips.Environment()
 
-# # basic patient information
-# DEFTEMPLATE_PATIENT = """
-# (deftemplate patient 
-#     (slot name_is (type STRING))
-#     (slot age_is (type INTEGER))
-#     )
-# """
-# env.build(DEFTEMPLATE_PATIENT)
-
-# # participant pelvic pain
-# DEFTEMPLATE_ACUTE_PELVIC_PAIN = """
-# (deftemplate pelvic_pain
-#     (slot has_pain (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_ACUTE_PELVIC_PAIN)
-
-# # participant Karnofsky quality of life score
-# DEFTEMPLATE_DYSMENORRHEA = """
-# (deftemplate dysmenorrhea
-#   (slot has_dysmenorrhea (type SYMBOL)
-#     (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_DYSMENORRHEA)
-
-# # participant HIV ELISA test result
-# DEFTEMPLATE_DYSPAREUNIA = """
-# (deftemplate dyspareunia
-#     (slot has_dyspareunia (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_DYSPAREUNIA)
-
-# # participant dyschezia status
-# DEFTEMPLATE_DYSCHEZIA = """
-# (deftemplate dyschezia
-#    (slot has_dyschezia (type SYMBOL)
-#         (allowed-symbols yes no unknown)))
-# """
-# env.build(DEFTEMPLATE_DYSCHEZIA)
-
-# # participant dysuria status
-# DEFTEMPLATE_DYSURIA = """
-# (deftemplate dysuria
-#    (slot has_dysuria (type SYMBOL)
-#         (allowed-symbols yes no unknown)))
-# """
-# env.build(DEFTEMPLATE_DYSURIA)
-
-# # participant pregnancy status
-# DEFTEMPLATE_INFERTILITY = """
-# (deftemplate infertility    
-#     (slot is_infertile (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_INFERTILITY)
-
-# # participant chronic pelvic pain
-# DEFTEMPLATE_CHRONIC_PELVIC_PAIN = """
-# (deftemplate chronic_pelvic_pain
-#     (slot has_chronic_pelvic_pain (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_CHRONIC_PELVIC_PAIN)
-
-# # participant has amenorrhea
-# DEFTEMPLATE_AMENORRHEA = """
-# (deftemplate amenorrhea
-#     (slot has_amenorrhea (type SYMBOL) 
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_AMENORRHEA)
-
-# # participant constipation status
-# DEFTEMPLATE_CONSTIPATION = """
-# (deftemplate constipation
-#     (slot has_constipation (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_CONSTIPATION)
-
-# # participant diarrhea status
-# DEFTEMPLATE_DIARRHEA = """
-# (deftemplate diarrhea
-#     (slot has_diarrhea (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_DIARRHEA)
-
-# # participant flank pain status
-# DEFTEMPLATE_FLANK_PAIN = """
-# (deftemplate flank_pain
-#     (slot has_flank_pain (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_FLANK_PAIN)
-
-# # participant hematuria status
-# DEFTEMPLATE_HEMATURIA = """
-# (deftemplate hematuria
-#     (slot has_hematuria (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_HEMATURIA)
-
-# # participant frequent urination status
-# DEFTEMPLATE_FREQUENT_URINATION = """
-# (deftemplate frequent_urination
-#     (slot has_frequent_urination (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_FREQUENT_URINATION)
-
-# # participant adenomyosis status
-# DEFTEMPLATE_ADENOMYOSIS = """
-# (deftemplate adenomyosis
-#     (slot has_adenomyosis (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_ADENOMYOSIS)
-
-# # participant inclusion criteria met status
-# DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION = """
-# (deftemplate endometriosis_inclusion
-#     (slot meets_criteria (type SYMBOL)
-#         (allowed-symbols yes no unknown))
-# )
-# """
-# env.build(DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION)
-
-# # participant trial eligibility status
-# DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION = """
-# (deftemplate concomitant_disease_inclusion
-#     (slot meets_criteria (type SYMBOL)
-#     (allowed-symbols yes no unknown possible))
-# )
-# """
-# env.build(DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION)
-
-# # Add deffacts that the inclusion, exclusion, trial eligibility, and child bearing status are all unknown
-# DEFFCATS_INITIAL_STATUS = """
-# (deffacts starting_inclusion_exclusion_facts "Set the inclusion criteria met to unknown"
-#     (endometriosis_inclusion (meets_criteria unknown))
-#     (concomitant_disease_inclusion (meets_criteria unknown))
-# )
-# """
-# env.build(DEFFCATS_INITIAL_STATUS)
-
-# # reset the environment to make sure the deffacts are added
-# env.reset()
-
-
-
-# DEFTEMPLATE_STRING = """
-# (deftemplate person
-#   (slot name (type STRING))
-#   (slot surname (type STRING))
-#   (slot birthdate (type SYMBOL)))
-# """
-
-# DEFRULE_STRING = """
-# (defrule hello-world
-#   "Greet a new person."
-#   (person (name ?name) (surname ?surname))
-#   =>
-#   (println "Hello " ?name " " ?surname))
-# """
-
-# environment = clips.Environment()
-
-# # define constructs
-# environment.build(DEFTEMPLATE_STRING)
-# environment.build(DEFRULE_STRING)
-
-# # retrieve the fact template
-# template = environment.find_template('person')
-
-# # assert a new fact through its template
-# fact = template.assert_fact(name='John',
-#                             surname='Doe',
-#                             birthdate=clips.Symbol('01/01/1970'))
-
-# # fact slots can be accessed as dictionary elements
-# assert fact['name'] == 'John'
-
-# # execute the activations in the agenda
-# environment.run()
-
-# read in input from csv file
-
-# three outputs
-# calculate accuracy, PPV, NPV for each case
-
-# and ablation analysis
-
-data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
-
-data = pd.read_csv(data_file, sep=',', index_col='PMBB_ID')
-
-# print(data['chronic_pelvic_peritonitis'])
-
-# data_dict
-# patient age: CURRENT_AGE
-#
-
-# run each row at a time, then evaluate correctness and store in another object
+env.define_function(store_result)
 
 DEFTEMPLATE_PATIENT_ENDOMETRIOSIS_SYMPTOMS = """
 (deftemplate patient_endo_symptoms
@@ -269,6 +67,200 @@ DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS = """
 """
 env.build(DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS)
 
+# participant inclusion criteria met status
+DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION = """
+(deftemplate endometriosis_inclusion
+    (slot meets_criteria (type SYMBOL)
+    (allowed-symbols yes no unknown))
+)
+"""
+env.build(DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION)
+
+# participant trial eligibility status
+DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION = """
+(deftemplate concomitant_disease_inclusion
+    (slot meets_criteria (type SYMBOL)
+    (allowed-symbols yes no unknown))
+)
+"""
+env.build(DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION)
+
+# Add deffacts that the inclusion, exclusion, trial eligibility, and child bearing status are all unknown
+DEFFCATS_INITIAL_STATUS = """
+(deffacts starting_inclusion_exclusion_facts "Set the inclusion criteria met to unknown"
+    (endometriosis_inclusion (meets_criteria unknown))
+    (concomitant_disease_inclusion (meets_criteria unknown))
+)
+"""
+env.build(DEFFCATS_INITIAL_STATUS)
+
+# reset the environment to make sure the deffacts are added
+# env.reset()
+
+# ; RULE: Inclusion Criteria Are Not Met
+# ; *Forward chaining to determine if participant is not eligible for study based on inclusion criteria facts
+# ; INPUT: Criteria based on inclusion criteria defined in study. 
+# ; OUTPUT: Trial eligibility No, Inclusion Criteria Met No
+DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_NOT_MET = """
+(defrule endo-inclusion-criteria-not-met "Rule to define a person not having any symptoms consistent with endometriosis"
+    (logical
+        (and
+            (patient_endo_symptoms (abdominal_pelvic_pain ~yes))  
+            (patient_endo_symptoms (dysmenorrhea ~yes))   
+            (patient_endo_symptoms (pain_with_sex ~yes)) 
+            (patient_endo_symptoms (dyschezia ~yes)) 
+            (patient_endo_symptoms (dysuria ~yes)) 
+            (patient_endo_symptoms (infertility ~yes))   
+            (patient_endo_symptoms (pelvic_perineal_pain ~yes))
+        )
+    )
+
+    ?f1 <-(endometriosis_inclusion (meets_criteria unknown))
+
+    => 
+
+    (modify ?f1 (meets_criteria no))
+)
+"""
+env.build(DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_NOT_MET)
+
+# indicates presence of symptom(s) that are consistent with endometriosis
+DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET = """
+(defrule endo-inclusion-criteria-met "Rule to define a person as having symptom(s) consistent with endometriosis"
+    (logical
+        (or
+            (patient_endo_symptoms (abdominal_pelvic_pain yes))  
+            (patient_endo_symptoms (dysmenorrhea yes))   
+            (patient_endo_symptoms (pain_with_sex yes)) 
+            (patient_endo_symptoms (dyschezia yes)) 
+            (patient_endo_symptoms (dysuria yes)) 
+            (patient_endo_symptoms (infertility yes))   
+            (patient_endo_symptoms (pelvic_perineal_pain yes))
+        )
+    )
+
+    ?f1 <-(endometriosis_inclusion (meets_criteria unknown))
+
+    => 
+
+    (modify ?f1 (meets_criteria yes))
+)
+"""
+env.build(DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET)
+
+# indicates presence of symptoms that indicate no concomitant disease (along with or instead of) endometriosis
+DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_NOT_MET = """
+(defrule concomitant-inclusion-criteria-not-met "Rule to define a person as having symptom(s) not consistent with other (non-endo) disease based on inclusion criteria facts"
+    (logical
+        (and
+            (patient_concomitant_disease_symptoms (amenorrhea ~yes))  
+            (patient_concomitant_disease_symptoms (constipation ~yes))   
+            (patient_concomitant_disease_symptoms (diarrhea ~yes)) 
+            (patient_concomitant_disease_symptoms (flank_pain ~yes)) 
+            (patient_concomitant_disease_symptoms (hematuria ~yes)) 
+            (patient_concomitant_disease_symptoms (frequent_urination ~yes))   
+            (patient_concomitant_disease_symptoms (adenomyosis ~yes))
+        )
+    )
+
+    ?f1 <-(concomitant_disease_inclusion (meets_criteria unknown))
+
+    => 
+
+    (modify ?f1 (meets_criteria no))
+)
+"""
+env.build(DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_NOT_MET)
+
+# indicates presence of symptoms that indicate concomitant disease (along with or instead of) endometriosis
+DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET = """
+(defrule concomitant-inclusion-criteria-met "Rule to define a person as having symptom(s) consistent with other (non-endo) disease based on inclusion criteria facts"
+    (logical
+        (or
+            (patient_concomitant_disease_symptoms (amenorrhea yes))  
+            (patient_concomitant_disease_symptoms (constipation yes))   
+            (patient_concomitant_disease_symptoms (diarrhea yes)) 
+            (patient_concomitant_disease_symptoms (flank_pain yes)) 
+            (patient_concomitant_disease_symptoms (hematuria yes)) 
+            (patient_concomitant_disease_symptoms (frequent_urination yes))   
+            (patient_concomitant_disease_symptoms (adenomyosis yes))
+        )
+    )
+
+    ?f1 <-(concomitant_disease_inclusion (meets_criteria unknown))
+
+    => 
+
+    (modify ?f1 (meets_criteria yes))
+)
+"""
+env.build(DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET)
+# not going to try and classify the concomitant disease - but will factor whether they do have a concomitant disease (IBS, or interstitial cystitis, or adenomyosis) in my evaluation
+    # because I don't have detailed symptom data for all of the concomitant diseases, only some of them
+
+DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_INCLUSION = """
+(defrule endo-and-concomitant-inclusion
+    (endometriosis_inclusion (meets_criteria yes))
+    (concomitant_disease_inclusion (meets_criteria yes))
+    =>
+    (println "___________")
+    (println "Symptoms are consistent with both endometriosis and presence of concomitant disease. [recommendation]")
+    (println "___________")
+    (store_result "endo_1" "other_1")
+)
+"""
+env.build(DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_INCLUSION)
+
+DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_EXCLUSION = """
+(defrule endo-and-concomitant-exclusion
+    (endometriosis_inclusion (meets_criteria no))
+    (concomitant_disease_inclusion (meets_criteria no))
+    =>
+    (println "___________")
+    (println "Symptoms are consistent with neither endometriosis nor concomitant diseases that we screened for (IBS, adenomyosis, others). [recommendation]")
+    (println "___________")
+    (store_result "endo_0" "other_0")
+)
+"""
+env.build(DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_EXCLUSION)
+
+DEFRULE_ONLY_ENDOMETRIOSIS_INCLUSION = """
+(defrule only-endo-inclusion
+    (endometriosis_inclusion (meets_criteria yes))
+    (concomitant_disease_inclusion (meets_criteria no))
+    =>
+    (println "___________")
+    (println "Patient has symptom(s) consistent only with endometriosis and not additional diseases")
+    (println "___________")
+    (store_result "endo_1" "other_0")
+)
+"""
+env.build(DEFRULE_ONLY_ENDOMETRIOSIS_INCLUSION)
+
+DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION = """
+(defrule only-endo-exclusion
+    (endometriosis_inclusion (meets_criteria no))
+    (concomitant_disease_inclusion (meets_criteria yes))
+    =>
+    (println "___________")
+    (println "Patient has symptom(s) consistent only with non-endo diseases")
+    (println "___________")
+    (store_result "endo_0" "other_1")
+)
+"""
+env.build(DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION)
+
+# three outputs
+# calculate accuracy, PPV, NPV for each case
+
+# and ablation analysis
+
+data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
+
+data = pd.read_csv(data_file, sep=',', index_col='PMBB_ID')
+
+# run each row at a time, then evaluate correctness and store in another object
+
 # retrieve the fact templates
 patient_endo_template = env.find_template('patient_endo_symptoms')
 patient_concomitant_disease_template = env.find_template('patient_concomitant_disease_symptoms')
@@ -281,20 +273,9 @@ patient_concomitant_disease_template = env.find_template('patient_concomitant_di
 # print(f"Distinct values in {NAME}: {sorted(distinct_values)}")
 # print(f"Range of distinct values in {NAME}: {value_range}")
 
-evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0}
+TESTROWS = 10
+# data = data.iloc[:TESTROWS]
 
-def store_result(*args):
-    endo, other = args
-    if endo == "endo_0" and other == "other_0":
-        evaluation_dict['neither_endo_concomitant_predicted'] += 1
-    elif endo == "endo_0" and other == "other_1":
-        evaluation_dict['only_concomitant_predicted'] += 1
-    elif endo == "endo_1" and other == "other_0":
-        evaluation_dict['only_endo_predicted'] += 1
-    elif endo == "endo_1" and other == "other_1":
-        evaluation_dict['both_endo_concomitant_actual'] += 1
-
-env.define_function(store_result)
 
 for index, row in data.iterrows():
     # resetting knowledge base each time
@@ -336,10 +317,10 @@ for index, row in data.iterrows():
     patient_endo_template.assert_fact(**endo_dict)
     patient_concomitant_disease_template.assert_fact(**other_diseases_dict)
 
+    env.run()
+
     print("___________CURRENT FACTS___________")
     print_facts(env)
-
-    # env.run()
     # EVALUATION PART
 
     results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
