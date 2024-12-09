@@ -4,12 +4,10 @@ import sys
 sys.path.append('./src/')
 from clips_util import print_facts, print_rules, print_templates, build_read_assert
 
-evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0}
+evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0, 'else':0}
 
 def store_result(*args):
     endo, other = args
-    # print(endo)
-    # print(other)
     if endo == "endo_0" and other == "other_0":
         evaluation_dict['neither_endo_concomitant_predicted'] += 1
     elif endo == "endo_0" and other == "other_1":
@@ -18,9 +16,10 @@ def store_result(*args):
         evaluation_dict['only_endo_predicted'] += 1
     elif endo == "endo_1" and other == "other_1":
         evaluation_dict['both_endo_concomitant_predicted'] += 1
+    else:
+        evaluation_dict['else'] += 1
 
 def count_symptoms(*args):
-    # v1, v2, v3, v4, v5, v6, v7 = args
     count = 0
     for symptom in args:
         if symptom == "yes":
@@ -149,8 +148,11 @@ DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET = """
     
     => 
     (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7))
-    (if (>= ?num_symptoms 2) then
+    (if (>= ?num_symptoms 1) then
         (modify ?f1 (meets_criteria yes))
+    )
+    (if (< ?num_symptoms 1) then
+        (modify ?f1 (meets_criteria no))
     )
 )
 """
@@ -196,8 +198,11 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET = """
     
     => 
     (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7))
-    (if (>= ?num_symptoms 2) then
+    (if (>= ?num_symptoms 3) then
         (modify ?f1 (meets_criteria yes))
+    )
+    (if (< ?num_symptoms 3) then
+        (modify ?f1 (meets_criteria no))
     )
 
 )
@@ -258,9 +263,6 @@ DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION = """
 """
 env.build(DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION)
 
-# three outputs
-# calculate accuracy, PPV, NPV for each case
-
 # and ablation analysis
 
 data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
@@ -271,18 +273,28 @@ data = pd.read_csv(data_file, sep=',', index_col='PMBB_ID')
 patient_endo_template = env.find_template('patient_endo_symptoms')
 patient_concomitant_disease_template = env.find_template('patient_concomitant_disease_symptoms')
 
+# TESTING AND EVALUATION PART!!!
 
 TESTROWS = 10
 # data = data.iloc[:TESTROWS]
 
+## LEGEND
+# A: only endo
+# B: only concomitant
+# C: both endo and concomitant 
+# D: neither endo or concomitant
+confusion_matrix_dict = {'pred_A_actual_A':0, 'pred_B_actual_A':0, 'pred_C_actual_A':0, 'pred_D_actual_A':0, 
+                            'pred_A_actual_B':0, 'pred_B_actual_B':0, 'pred_C_actual_B':0, 'pred_D_actual_B':0,
+                            'pred_A_actual_C':0, 'pred_B_actual_C':0, 'pred_C_actual_C':0, 'pred_D_actual_C':0,
+                            'pred_A_actual_D':0, 'pred_B_actual_D':0, 'pred_C_actual_D':0, 'pred_D_actual_D':0}
 # run each row at a time, then evaluate correctness and store in another object
 for index, row in data.iterrows():
     # resetting knowledge base each time
     env.reset()
 
     # split into endo and concomitant disease dicts
-    endo_data = data.loc[index, ['abdominal_pelvic_pain', 'dysmenorrhea', 'pain_with_sex', 'dyschezia', 'dysuria', 'infertility', 'pelvic_perineal_pain']]
-    additional_disease_data = data.loc[index, ['amenorrhea', 'constipation', 'diarrhea', 'flank_pain', 'hematuria', 'frequent_urination', 'adenomyosis']]
+    endo_data = data.loc[index, ['abdominal_pelvic_pain', 'dysmenorrhea', 'pain_with_sex', 'dyschezia', 'dysuria', 'infertility', 'pelvic_perineal_pain', 'adenomyosis']]
+    additional_disease_data = data.loc[index, ['amenorrhea', 'constipation', 'diarrhea', 'flank_pain', 'hematuria', 'frequent_urination']]
 
     # create dictionary from current row, populated only with the symptoms I need
     endo_dict = endo_data.to_dict()
@@ -315,71 +327,65 @@ for index, row in data.iterrows():
 
     env.run()
 
-    # print("___________CURRENT FACTS___________")
-    # print_facts(env)
-    # USE THESE FACTS TO DETERMINE CONFUSION MATRIX VALUES!!!! CAN DO TOMORROW!!!!!
-    # EVALUATION PART
-    ## LEGEND
-    # A: only endo
-    # B: only concomitant
-    # C: both endo and concomitant 
-    # D: neither endo or concomitant
-    confusion_matrix_dict = {'pred_A_actual_A':0, 'pred_B_actual_A':0, 'pred_C_actual_A':0, 'pred_D_actual_A':0, 
-                             'pred_A_actual_B':0, 'pred_B_actual_B':0, 'pred_C_actual_B':0, 'pred_D_actual_B':0,
-                             'pred_A_actual_C':0, 'pred_B_actual_C':0, 'pred_C_actual_C':0, 'pred_D_actual_C':0,
-                             'pred_A_actual_D':0, 'pred_B_actual_D':0, 'pred_C_actual_D':0, 'pred_D_actual_D':0}
-    # pred and actually only endo,
-    # only_endo_results_dict = {'True Positives':0, 'True Negatives':0, 'False Positives':0, 'False Negatives':0}
-    # only_concomitant_results_dict = {'True Positives':0, 'True Negatives':0, 'False Positives':0, 'False Negatives':0}
-    # both_endo_concomitant_results_dict = {'True Positives':0, 'True Negatives':0, 'False Positives':0, 'False Negatives':0}
-    # neither_endo_concomitant_results_dict = {'True Positives':0, 'True Negatives':0, 'False Positives':0, 'False Negatives':0}
-
-    # endo = env.find_template("endometriosis_inclusion")
     for idx, fact in enumerate(env.facts()):
         if idx == 0:
             endo_pred = fact['meets_criteria']
+            # print(type(endo_pred))
+            # print(endo_pred == clips.Symbol('no'))
         elif idx == 1:
             concomitant_pred = fact['meets_criteria']
-    # concomitant_pred = env.find_template("concomitant_disease_inclusion")
+
     results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
+
+    # ONLY ENDO ACTUAL (A)
+    if results_data['endometriosis'] == 1 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        evaluation_dict['only_endo_actual'] += 1
+    # BOTH ENDO CONCOMITANT ACTUAL (C)
+    elif results_data['endometriosis'] == 1 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        evaluation_dict['both_endo_concomitant_actual'] += 1
+    # NEITHER ACTUAL (D)
+    elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        evaluation_dict['neither_endo_concomitant_actual'] += 1
+    # ONLY CONCOMITANT ACTUAL (B)
+    elif results_data['endometriosis'] == 0 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        evaluation_dict['only_concomitant_actual'] += 1
 
     def tabulate_actual_results(pred_class):
         # ONLY ENDO ACTUAL (A)
+        # print(confusion_matrix_dict[dict_key])
         if results_data['endometriosis'] == 1 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
             dict_key = f'pred_{pred_class}_actual_A'
-            evaluation_dict['only_endo_actual'] += 1
             confusion_matrix_dict[dict_key] += 1
         # BOTH ENDO CONCOMITANT ACTUAL (C)
         elif results_data['endometriosis'] == 1 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
             dict_key = f'pred_{pred_class}_actual_C'
-            evaluation_dict['both_endo_concomitant_actual'] += 1
             confusion_matrix_dict[dict_key] += 1
         # NEITHER ACTUAL (D)
         elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
             dict_key = f'pred_{pred_class}_actual_D'
-            evaluation_dict['neither_endo_concomitant_actual'] += 1
             confusion_matrix_dict[dict_key] += 1
         # ONLY CONCOMITANT ACTUAL (B)
         elif results_data['endometriosis'] == 0 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
             dict_key = f'pred_{pred_class}_actual_B'
-            evaluation_dict['only_concomitant_actual'] += 1
             confusion_matrix_dict[dict_key] += 1
+        # print(confusion_matrix_dict)
 
     # ONLY END PRED (A)
-    if endo_pred == "yes" and concomitant_pred == "no":
+    if endo_pred == clips.Symbol('yes') and concomitant_pred == clips.Symbol('no'):
         tabulate_actual_results('A')
     # BOTH ENDO CONCOMITANT PRED (C)
-    elif endo_pred == "yes" and concomitant_pred == "yes":
+    elif endo_pred == clips.Symbol('yes') and concomitant_pred == clips.Symbol('yes'):
         tabulate_actual_results('C')
     # ONLY CONCOMITANT PRED (B)
-    elif endo_pred == "no" and concomitant_pred == "yes":
+    elif endo_pred == clips.Symbol('no') and concomitant_pred == clips.Symbol('yes'):
         tabulate_actual_results('B')
     # NEITHER PRED (D)
-    elif endo_pred == "no" and concomitant_pred == "no":
+    elif endo_pred == clips.Symbol('no') and concomitant_pred == clips.Symbol('no'):
         tabulate_actual_results('D')
 
 print(f"{evaluation_dict['only_endo_predicted']}, {evaluation_dict['only_endo_actual']}")
 print(f"{evaluation_dict['only_concomitant_predicted']}, {evaluation_dict['only_concomitant_actual']}")
 print(f"{evaluation_dict['both_endo_concomitant_predicted']}, {evaluation_dict['both_endo_concomitant_actual']}")
 print(f"{evaluation_dict['neither_endo_concomitant_predicted']}, {evaluation_dict['neither_endo_concomitant_actual']}")
+print(evaluation_dict['else'])
 print(confusion_matrix_dict)
