@@ -48,6 +48,8 @@ DEFTEMPLATE_PATIENT_ENDOMETRIOSIS_SYMPTOMS = """
         (allowed-symbols yes no unknown))
     (slot pelvic_perineal_pain (type SYMBOL)
         (allowed-symbols yes no unknown))
+    (slot adenomyosis (type SYMBOL)
+        (allowed-symbols yes no unknown))
 
     )
 """
@@ -67,8 +69,6 @@ DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS = """
     (slot hematuria (type SYMBOL)
         (allowed-symbols yes no unknown))
     (slot frequent_urination (type SYMBOL)
-        (allowed-symbols yes no unknown))
-    (slot adenomyosis (type SYMBOL)
         (allowed-symbols yes no unknown))
 
 )
@@ -120,6 +120,7 @@ DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_NOT_MET = """
             (patient_endo_symptoms (dysuria ~yes)) 
             (patient_endo_symptoms (infertility ~yes))   
             (patient_endo_symptoms (pelvic_perineal_pain ~yes))
+            (patient_endo_symptoms (adenomyosis ~yes))
         )
     )
 
@@ -142,16 +143,17 @@ DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET = """
         (dyschezia ?v4) 
         (dysuria ?v5) 
         (infertility ?v6) 
-        (pelvic_perineal_pain ?v7))
+        (pelvic_perineal_pain ?v7)
+        (adenomyosis ?v8))
     
     ?f1 <-(endometriosis_inclusion (meets_criteria unknown))
     
     => 
-    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7))
-    (if (>= ?num_symptoms 1) then
+    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7 ?v8))
+    (if (>= ?num_symptoms 2) then
         (modify ?f1 (meets_criteria yes))
     )
-    (if (< ?num_symptoms 1) then
+    (if (< ?num_symptoms 2) then
         (modify ?f1 (meets_criteria no))
     )
 )
@@ -168,8 +170,7 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_NOT_MET = """
             (patient_concomitant_disease_symptoms (diarrhea ~yes)) 
             (patient_concomitant_disease_symptoms (flank_pain ~yes)) 
             (patient_concomitant_disease_symptoms (hematuria ~yes)) 
-            (patient_concomitant_disease_symptoms (frequent_urination ~yes))   
-            (patient_concomitant_disease_symptoms (adenomyosis ~yes))
+            (patient_concomitant_disease_symptoms (frequent_urination ~yes))
         )
     )
 
@@ -191,13 +192,13 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET = """
         (diarrhea ?v3) 
         (flank_pain ?v4) 
         (hematuria ?v5) 
-        (frequent_urination ?v6) 
-        (adenomyosis ?v7))
+        (frequent_urination ?v6)
+    ) 
     
     ?f1 <-(concomitant_disease_inclusion  (meets_criteria unknown))
     
     => 
-    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7))
+    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6))
     (if (>= ?num_symptoms 3) then
         (modify ?f1 (meets_criteria yes))
     )
@@ -265,9 +266,10 @@ env.build(DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION)
 
 # and ablation analysis
 
-data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
+# data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
+data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/new_features_covars.csv'
 
-data = pd.read_csv(data_file, sep=',', index_col='PMBB_ID')
+data = pd.read_csv(data_file, sep=',')
 
 # retrieve the fact templates
 patient_endo_template = env.find_template('patient_endo_symptoms')
@@ -279,15 +281,19 @@ TESTROWS = 10
 # data = data.iloc[:TESTROWS]
 
 ## LEGEND
-# A: only endo
-# B: only concomitant
-# C: both endo and concomitant 
-# D: neither endo or concomitant
+# A: only endo -> case
+# B: only concomitant -> control
+# C: both endo and concomitant -> case
+# D: neither endo or concomitant -> control
 confusion_matrix_dict = {'pred_A_actual_A':0, 'pred_B_actual_A':0, 'pred_C_actual_A':0, 'pred_D_actual_A':0, 
                             'pred_A_actual_B':0, 'pred_B_actual_B':0, 'pred_C_actual_B':0, 'pred_D_actual_B':0,
                             'pred_A_actual_C':0, 'pred_B_actual_C':0, 'pred_C_actual_C':0, 'pred_D_actual_C':0,
                             'pred_A_actual_D':0, 'pred_B_actual_D':0, 'pred_C_actual_D':0, 'pred_D_actual_D':0}
+
+case_controls_confusion_matrix_dict = {'pred_case_actual_case':0, 'pred_case_actual_control':0, 'pred_control_actual_control':0, 'pred_control_actual_case':0}
 # run each row at a time, then evaluate correctness and store in another object
+
+predicted_phenotype = []
 for index, row in data.iterrows():
     # resetting knowledge base each time
     env.reset()
@@ -330,62 +336,80 @@ for index, row in data.iterrows():
     for idx, fact in enumerate(env.facts()):
         if idx == 0:
             endo_pred = fact['meets_criteria']
-            # print(type(endo_pred))
-            # print(endo_pred == clips.Symbol('no'))
         elif idx == 1:
             concomitant_pred = fact['meets_criteria']
 
     results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
 
-    # ONLY ENDO ACTUAL (A)
-    if results_data['endometriosis'] == 1 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-        evaluation_dict['only_endo_actual'] += 1
-    # BOTH ENDO CONCOMITANT ACTUAL (C)
-    elif results_data['endometriosis'] == 1 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
-        evaluation_dict['both_endo_concomitant_actual'] += 1
-    # NEITHER ACTUAL (D)
-    elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-        evaluation_dict['neither_endo_concomitant_actual'] += 1
-    # ONLY CONCOMITANT ACTUAL (B)
-    elif results_data['endometriosis'] == 0 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
-        evaluation_dict['only_concomitant_actual'] += 1
+    # # ONLY ENDO ACTUAL (A)
+    # if (results_data['endometriosis'] == 1 or results_data['adenomyosis'] == 1) and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+    #     evaluation_dict['only_endo_actual'] += 1
+    # # BOTH ENDO CONCOMITANT ACTUAL (C)
+    # elif (results_data['endometriosis'] == 1 or results_data['adenomyosis'] == 1 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1)):
+    #     evaluation_dict['both_endo_concomitant_actual'] += 1
+    # # NEITHER ACTUAL (D)
+    # elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+    #     evaluation_dict['neither_endo_concomitant_actual'] += 1
+    # # ONLY CONCOMITANT ACTUAL (B)
+    # elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+    #     evaluation_dict['only_concomitant_actual'] += 1
 
     def tabulate_actual_results(pred_class):
         # ONLY ENDO ACTUAL (A)
         # print(confusion_matrix_dict[dict_key])
-        if results_data['endometriosis'] == 1 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        if row['Chart_Adeno_or_Endo'] == 1.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
             dict_key = f'pred_{pred_class}_actual_A'
             confusion_matrix_dict[dict_key] += 1
         # BOTH ENDO CONCOMITANT ACTUAL (C)
-        elif results_data['endometriosis'] == 1 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        elif row['Chart_Adeno_or_Endo'] == 1.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
             dict_key = f'pred_{pred_class}_actual_C'
             confusion_matrix_dict[dict_key] += 1
         # NEITHER ACTUAL (D)
-        elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        elif row['Chart_Adeno_or_Endo'] == 0.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
             dict_key = f'pred_{pred_class}_actual_D'
             confusion_matrix_dict[dict_key] += 1
         # ONLY CONCOMITANT ACTUAL (B)
-        elif results_data['endometriosis'] == 0 and (results_data['adenomyosis'] == 1 or results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        elif row['Chart_Adeno_or_Endo'] == 0.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
             dict_key = f'pred_{pred_class}_actual_B'
             confusion_matrix_dict[dict_key] += 1
         # print(confusion_matrix_dict)
 
-    # ONLY END PRED (A)
+    # ONLY END PRED (A) -> CASES (1)
     if endo_pred == clips.Symbol('yes') and concomitant_pred == clips.Symbol('no'):
         tabulate_actual_results('A')
-    # BOTH ENDO CONCOMITANT PRED (C)
+        predicted_phenotype.append(1.0)
+    # BOTH ENDO CONCOMITANT PRED (C) -> CASES (1)
     elif endo_pred == clips.Symbol('yes') and concomitant_pred == clips.Symbol('yes'):
         tabulate_actual_results('C')
-    # ONLY CONCOMITANT PRED (B)
+        predicted_phenotype.append(1.0)
+    # ONLY CONCOMITANT PRED (B) -> CONTROLS (0)
     elif endo_pred == clips.Symbol('no') and concomitant_pred == clips.Symbol('yes'):
         tabulate_actual_results('B')
-    # NEITHER PRED (D)
+        predicted_phenotype.append(0.0)
+    # NEITHER PRED (D) -> CONTROLS (0)
     elif endo_pred == clips.Symbol('no') and concomitant_pred == clips.Symbol('no'):
         tabulate_actual_results('D')
+        predicted_phenotype.append(0.0)
 
-print(f"{evaluation_dict['only_endo_predicted']}, {evaluation_dict['only_endo_actual']}")
-print(f"{evaluation_dict['only_concomitant_predicted']}, {evaluation_dict['only_concomitant_actual']}")
-print(f"{evaluation_dict['both_endo_concomitant_predicted']}, {evaluation_dict['both_endo_concomitant_actual']}")
-print(f"{evaluation_dict['neither_endo_concomitant_predicted']}, {evaluation_dict['neither_endo_concomitant_actual']}")
-print(evaluation_dict['else'])
+# print(f"{evaluation_dict['only_endo_predicted']}, {evaluation_dict['only_endo_actual']}")
+# print(f"{evaluation_dict['only_concomitant_predicted']}, {evaluation_dict['only_concomitant_actual']}")
+# print(f"{evaluation_dict['both_endo_concomitant_predicted']}, {evaluation_dict['both_endo_concomitant_actual']}")
+# print(f"{evaluation_dict['neither_endo_concomitant_predicted']}, {evaluation_dict['neither_endo_concomitant_actual']}")
+# print(evaluation_dict['else'])
 print(confusion_matrix_dict)
+
+results_df = data[['PMBB_ID', 'Chart_Adeno_or_Endo', 'endometriosis']]
+results_df['predicted_phenotype'] = predicted_phenotype
+print(results_df)
+
+matching_counter = 0
+for index, row in results_df.iterrows():
+    if row['Chart_Adeno_or_Endo'] == row['predicted_phenotype']:
+        matching_counter += 1
+print(matching_counter)
+
+case_controls_confusion_matrix_dict['pred_case_actual_case'] = confusion_matrix_dict['pred_A_actual_A'] + confusion_matrix_dict['pred_C_actual_C'] + confusion_matrix_dict['pred_A_actual_C'] + confusion_matrix_dict['pred_C_actual_A']
+case_controls_confusion_matrix_dict['pred_case_actual_control'] = confusion_matrix_dict['pred_A_actual_B'] + confusion_matrix_dict['pred_A_actual_D'] + confusion_matrix_dict['pred_C_actual_B'] + confusion_matrix_dict['pred_C_actual_D']
+case_controls_confusion_matrix_dict['pred_control_actual_case'] = confusion_matrix_dict['pred_B_actual_A'] + confusion_matrix_dict['pred_B_actual_C'] + confusion_matrix_dict['pred_D_actual_A'] + confusion_matrix_dict['pred_D_actual_C']
+case_controls_confusion_matrix_dict['pred_control_actual_control'] = confusion_matrix_dict['pred_B_actual_B'] + confusion_matrix_dict['pred_D_actual_D'] + confusion_matrix_dict['pred_B_actual_D'] + confusion_matrix_dict['pred_D_actual_B']
+print(case_controls_confusion_matrix_dict)
