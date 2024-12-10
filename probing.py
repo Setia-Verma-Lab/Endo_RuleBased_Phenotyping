@@ -34,15 +34,6 @@ print(total_case_counter)
 print(total_control_counter)
 # always comparing to the chart reviews
 
-            # (patient_endo_symptoms (abdominal_pelvic_pain ~yes))  
-            # (patient_endo_symptoms (dysmenorrhea ~yes))   
-            # (patient_endo_symptoms (pain_with_sex ~yes)) 
-            # (patient_endo_symptoms (dyschezia ~yes)) 
-            # (patient_endo_symptoms (dysuria ~yes)) 
-            # (patient_endo_symptoms (infertility ~yes))   
-            # (patient_endo_symptoms (pelvic_perineal_pain ~yes))
-            # (patient_endo_symptoms (adenomyosis ~yes))
-
 new_testing_data = label_comparisons.to_csv('/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/new_features_covars.csv')
 
 probe = label_comparisons[['Chart_Adeno_or_Endo', 'adenomyosis', 'dysmenorrhea', 'dyschezia', 'dysuria', 'pain_with_sex', 'infertility', 'abdominal_pelvic_pain', 'pelvic_perineal_pain']]

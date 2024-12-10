@@ -148,10 +148,10 @@ DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET = """
     
     => 
     (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7 ?v8 ?v9))
-    (if (>= ?num_symptoms 1) then
+    (if (>= ?num_symptoms 2) then
         (modify ?f1 (meets_criteria yes))
     )
-    (if (< ?num_symptoms 1) then
+    (if (< ?num_symptoms 2) then
         (modify ?f1 (meets_criteria no))
     )
 )
