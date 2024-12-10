@@ -6,17 +6,6 @@ chart_labels_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBas
 features = pd.read_csv(features_file, sep=',')
 labels = pd.read_csv(chart_labels_file, sep=',')
 
-# endo = labels[labels['Chart_Adeno_or_Endo'] == '0.0']
-# print(len(endo))
-
-# print(labels['Chart_Adeno_or_Endo'].unique())
-
-# for index, row in features.iterrows():
-#     if features['endometriosis'] == 1:
-#         print(features.loc[index])
-# print(features.columns)
-# print(labels.columns)
-
 # label_comparisons = features.join(labels, on='PMBB_ID')
 label_comparisons = labels.set_index('PMBB_ID').join(features.set_index('PMBB_ID'))
 # label_comparisons = label_comparisons[['Chart_Adeno_or_Endo', 'endometriosis']]
