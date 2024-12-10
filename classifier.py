@@ -222,7 +222,9 @@ DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_INCLUSION = """
 (defrule endo-and-concomitant-inclusion
     (endometriosis_inclusion (meets_criteria yes))
     (concomitant_disease_inclusion (meets_criteria yes))
+    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
     =>
+    (modify ?f1 (endometriosis_phenotype_status yes))
     (println "___________")
     (println "Patient has at least 1 symptom(s) that are consistent with both endometriosis and additional concomitant disease (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
@@ -234,7 +236,9 @@ DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_EXCLUSION = """
 (defrule endo-and-concomitant-exclusion
     (endometriosis_inclusion (meets_criteria no))
     (concomitant_disease_inclusion (meets_criteria no))
+    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
     =>
+    (modify ?f1 (endometriosis_phenotype_status no))
     (println "___________")
     (println "Patient has no symptoms that are consistent with endometriosis or other phenotypes that we screened for (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
@@ -246,7 +250,9 @@ DEFRULE_ONLY_ENDOMETRIOSIS_INCLUSION = """
 (defrule only-endo-inclusion
     (endometriosis_inclusion (meets_criteria yes))
     (concomitant_disease_inclusion (meets_criteria no))
+    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
     =>
+    (modify ?f1 (endometriosis_phenotype_status yes))
     (println "___________")
     (println "Patient has at least 1 symptom that is consistent only with endometriosis and no symptoms consistent with additional diseases (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
@@ -258,57 +264,15 @@ DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION = """
 (defrule only-endo-exclusion
     (endometriosis_inclusion (meets_criteria no))
     (concomitant_disease_inclusion (meets_criteria yes))
+    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
     =>
+    (modify ?f1 (endometriosis_phenotype_status no))
     (println "___________")
     (println "Patient has at least 1 symptom that is consistent only with non-Endometriosis phenotypes (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
 )
 """
 env.build(DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION)
-
-DEFRULE_ENDOMETRIOSIS_CASE = """
-(defrule endometriosis-case
-    (logical
-        (or
-            (and
-                (endometriosis_inclusion (meets_criteria yes))
-                (concomitant_disease_inclusion (meets_criteria yes))
-            )
-            (and
-                (endometriosis_inclusion (meets_criteria yes))
-                (concomitant_disease_inclusion (meets_criteria no))
-            )
-        )
-    )
-
-    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
-    =>
-    (modify ?f1 (endometriosis_phenotype_status yes))
-)
-"""
-env.build(DEFRULE_ENDOMETRIOSIS_CASE)
-
-DEFRULE_ENDOMETRIOSIS_CONTROL = """
-(defrule endometriosis-control
-    (logical
-        (or
-            (and
-                (endometriosis_inclusion (meets_criteria no))
-                (concomitant_disease_inclusion (meets_criteria no))
-            )
-            (and
-                (endometriosis_inclusion (meets_criteria no))
-                (concomitant_disease_inclusion (meets_criteria yes))
-            )
-        )
-    )
-
-    ?f1 <-(new_phenotype_status (endometriosis_phenotype_status unknown))
-    =>
-    (modify ?f1 (endometriosis_phenotype_status no))
-)
-"""
-env.build(DEFRULE_ENDOMETRIOSIS_CONTROL)
 
 # data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
 data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/new_features_covars.csv'
