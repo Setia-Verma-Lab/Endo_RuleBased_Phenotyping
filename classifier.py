@@ -341,19 +341,6 @@ for index, row in data.iterrows():
 
     results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
 
-    # # ONLY ENDO ACTUAL (A)
-    # if (results_data['endometriosis'] == 1 or results_data['adenomyosis'] == 1) and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-    #     evaluation_dict['only_endo_actual'] += 1
-    # # BOTH ENDO CONCOMITANT ACTUAL (C)
-    # elif (results_data['endometriosis'] == 1 or results_data['adenomyosis'] == 1 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1)):
-    #     evaluation_dict['both_endo_concomitant_actual'] += 1
-    # # NEITHER ACTUAL (D)
-    # elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-    #     evaluation_dict['neither_endo_concomitant_actual'] += 1
-    # # ONLY CONCOMITANT ACTUAL (B)
-    # elif results_data['endometriosis'] == 0 and results_data['adenomyosis'] == 0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
-    #     evaluation_dict['only_concomitant_actual'] += 1
-
     def tabulate_actual_results(pred_class):
         # ONLY ENDO ACTUAL (A)
         # print(confusion_matrix_dict[dict_key])
@@ -391,11 +378,6 @@ for index, row in data.iterrows():
         tabulate_actual_results('D')
         predicted_phenotype.append(0.0)
 
-# print(f"{evaluation_dict['only_endo_predicted']}, {evaluation_dict['only_endo_actual']}")
-# print(f"{evaluation_dict['only_concomitant_predicted']}, {evaluation_dict['only_concomitant_actual']}")
-# print(f"{evaluation_dict['both_endo_concomitant_predicted']}, {evaluation_dict['both_endo_concomitant_actual']}")
-# print(f"{evaluation_dict['neither_endo_concomitant_predicted']}, {evaluation_dict['neither_endo_concomitant_actual']}")
-# print(evaluation_dict['else'])
 print(confusion_matrix_dict)
 
 results_df = data[['PMBB_ID', 'Chart_Adeno_or_Endo', 'endometriosis']]
