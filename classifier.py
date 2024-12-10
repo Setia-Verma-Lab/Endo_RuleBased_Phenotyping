@@ -17,6 +17,7 @@ env = clips.Environment()
 # env.define_function(store_result)
 env.define_function(count_symptoms)
 
+# patient endometriosis symptoms
 DEFTEMPLATE_PATIENT_ENDOMETRIOSIS_SYMPTOMS = """
 (deftemplate patient_endo_symptoms
     (slot endometriosis (type SYMBOL)
@@ -66,7 +67,7 @@ DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS = """
 """
 env.build(DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS)
 
-# participant inclusion criteria met status
+# status of whether or not patient has symptoms consistent with endo
 DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION = """
 (deftemplate endometriosis_inclusion
     (slot meets_criteria (type SYMBOL)
@@ -75,7 +76,7 @@ DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION = """
 """
 env.build(DEFTEMPLATE_ENDOMETRIOSIS_INCLUSION)
 
-# participant trial eligibility status
+# status of whether or not patient has symptoms consistent with non-endo diseases
 DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION = """
 (deftemplate concomitant_disease_inclusion
     (slot meets_criteria (type SYMBOL)
@@ -84,6 +85,7 @@ DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION = """
 """
 env.build(DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION)
 
+# status of patient being classified as case or control
 DEFTEMPLATE_NEW_PHENOTYPE_STATUS = """
 (deftemplate new_phenotype_status
     (slot endometriosis_phenotype_status (type SYMBOL)
@@ -92,9 +94,9 @@ DEFTEMPLATE_NEW_PHENOTYPE_STATUS = """
 """
 env.build(DEFTEMPLATE_NEW_PHENOTYPE_STATUS)
 
-# Add deffacts that the inclusion, exclusion, trial eligibility, and child bearing status are all unknown
+# Add deffacts that all statuses are unknown initially
 DEFFACTS_INITIAL_STATUS = """
-(deffacts starting_inclusion_exclusion_facts "Set the inclusion criteria met to unknown"
+(deffacts starting_inclusion_exclusion_facts "Set the initial templates to unknown"
     (endometriosis_inclusion (meets_criteria unknown))
     (concomitant_disease_inclusion (meets_criteria unknown))
     (new_phenotype_status (endometriosis_phenotype_status unknown))
@@ -102,13 +104,7 @@ DEFFACTS_INITIAL_STATUS = """
 """
 env.build(DEFFACTS_INITIAL_STATUS)
 
-# reset the environment to make sure the deffacts are added
-# env.reset()
 
-# ; RULE: Inclusion Criteria Are Not Met
-# ; *Forward chaining to determine if participant is not eligible for study based on inclusion criteria facts
-# ; INPUT: Criteria based on inclusion criteria defined in study. 
-# ; OUTPUT: Trial eligibility No, Inclusion Criteria Met No
 DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_NOT_MET = """
 (defrule endo-inclusion-criteria-not-met "Rule to define a person not having any symptoms consistent with endometriosis"
     (logical
@@ -301,6 +297,24 @@ confusion_matrix_dict = {'pred_A_actual_A':0, 'pred_B_actual_A':0, 'pred_C_actua
 case_controls_confusion_matrix_dict = {'pred_case_actual_case':0, 'pred_case_actual_control':0, 'pred_control_actual_control':0, 'pred_control_actual_case':0}
 # run each row at a time, then evaluate correctness and store in another object
 
+def tabulate_actual_results(pred_class):
+    # ONLY ENDO ACTUAL (A)
+    if row['Chart_Adeno_or_Endo'] == 1.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        dict_key = f'pred_{pred_class}_actual_A'
+        confusion_matrix_dict[dict_key] += 1
+    # BOTH ENDO CONCOMITANT ACTUAL (C)
+    elif row['Chart_Adeno_or_Endo'] == 1.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        dict_key = f'pred_{pred_class}_actual_C'
+        confusion_matrix_dict[dict_key] += 1
+    # NEITHER ACTUAL (D)
+    elif row['Chart_Adeno_or_Endo'] == 0.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
+        dict_key = f'pred_{pred_class}_actual_D'
+        confusion_matrix_dict[dict_key] += 1
+    # ONLY CONCOMITANT ACTUAL (B)
+    elif row['Chart_Adeno_or_Endo'] == 0.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
+        dict_key = f'pred_{pred_class}_actual_B'
+        confusion_matrix_dict[dict_key] += 1
+
 predicted_phenotype = []
 for index, row in data.iterrows():
     # resetting knowledge base each time
@@ -349,26 +363,6 @@ for index, row in data.iterrows():
             concomitant_pred = fact['meets_criteria']
 
     results_data = data.loc[index, ['endometriosis', 'adenomyosis', 'ibs', 'interstitial_cystitis']]
-
-    def tabulate_actual_results(pred_class):
-        # ONLY ENDO ACTUAL (A)
-        # print(confusion_matrix_dict[dict_key])
-        if row['Chart_Adeno_or_Endo'] == 1.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-            dict_key = f'pred_{pred_class}_actual_A'
-            confusion_matrix_dict[dict_key] += 1
-        # BOTH ENDO CONCOMITANT ACTUAL (C)
-        elif row['Chart_Adeno_or_Endo'] == 1.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
-            dict_key = f'pred_{pred_class}_actual_C'
-            confusion_matrix_dict[dict_key] += 1
-        # NEITHER ACTUAL (D)
-        elif row['Chart_Adeno_or_Endo'] == 0.0 and results_data['ibs'] == 0 and results_data['interstitial_cystitis'] == 0:
-            dict_key = f'pred_{pred_class}_actual_D'
-            confusion_matrix_dict[dict_key] += 1
-        # ONLY CONCOMITANT ACTUAL (B)
-        elif row['Chart_Adeno_or_Endo'] == 0.0 and (results_data['ibs'] == 1 or results_data['interstitial_cystitis'] == 1):
-            dict_key = f'pred_{pred_class}_actual_B'
-            confusion_matrix_dict[dict_key] += 1
-        # print(confusion_matrix_dict)
 
     # ONLY END PRED (A) -> CASES (1)
     if endo_pred == clips.Symbol('yes') and concomitant_pred == clips.Symbol('no'):
