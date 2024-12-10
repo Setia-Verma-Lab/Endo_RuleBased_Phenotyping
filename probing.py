@@ -26,13 +26,23 @@ print(label_comparisons.columns) # -> pmbb ids and chart reviewed numbers indica
 # TESTROWS = 5
 # label_comparisons = label_comparisons[:TESTROWS]
 total_cases = 1480
-matching_counter = 0
+case_counter, total_case_counter = 0, 0
+control_counter, total_control_counter = 0, 0
 for index, row in label_comparisons.iterrows():
-    if row['Chart_Adeno_or_Endo'] == row['endometriosis']:
-        matching_counter += 1
+    if row['Chart_Adeno_or_Endo'] == 1:
+        total_case_counter += 1
+        if row['endometriosis'] == 1:
+            case_counter += 1
+    elif row['Chart_Adeno_or_Endo'] == 0:
+        total_control_counter += 1
+        if row['endometriosis'] == 0:
+            control_counter += 1
 # # get cases that are matching across features_file and chart_labels_file
 
-print(matching_counter) # 11% are misclassified in PMBB when comparing Endo ICDs to Endo Chart reviews. want to improve on this accuracy level to try and decrease what is misclassified
+print(case_counter) # 11% are misclassified in PMBB when comparing Endo ICDs to Endo Chart reviews. want to improve on this accuracy level to try and decrease what is misclassified
+print(control_counter)
+print(total_case_counter)
+print(total_control_counter)
 # always comparing to the chart reviews
 
             # (patient_endo_symptoms (abdominal_pelvic_pain ~yes))  

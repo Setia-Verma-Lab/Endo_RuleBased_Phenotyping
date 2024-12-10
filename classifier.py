@@ -70,6 +70,10 @@ DEFTEMPLATE_PATIENT_CONCOMITANT_DISEASE_SYMPTOMS = """
         (allowed-symbols yes no unknown))
     (slot frequent_urination (type SYMBOL)
         (allowed-symbols yes no unknown))
+    (slot ibs (type SYMBOL)
+        (allowed-symbols yes no unknown))
+    (slot interstitial_cystitis (type SYMBOL)
+        (allowed-symbols yes no unknown))
 
 )
 """
@@ -93,11 +97,19 @@ DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION = """
 """
 env.build(DEFTEMPLATE_CONCOMITANT_DISEASE_INCLUSION)
 
+DEFTEMPLATE_NEW_PHENOTYPE_STATUS = """
+(deftemplate new_phenotype_status
+    (slot endometriosis_status (type SYMBOL)
+    (allowed-symbols yes no unknown))
+)
+"""
+
 # Add deffacts that the inclusion, exclusion, trial eligibility, and child bearing status are all unknown
 DEFFCATS_INITIAL_STATUS = """
 (deffacts starting_inclusion_exclusion_facts "Set the inclusion criteria met to unknown"
     (endometriosis_inclusion (meets_criteria unknown))
     (concomitant_disease_inclusion (meets_criteria unknown))
+    (new_phenotype_status (endometriosis_status unknown))
 )
 """
 env.build(DEFFCATS_INITIAL_STATUS)
@@ -171,6 +183,8 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_NOT_MET = """
             (patient_concomitant_disease_symptoms (flank_pain ~yes)) 
             (patient_concomitant_disease_symptoms (hematuria ~yes)) 
             (patient_concomitant_disease_symptoms (frequent_urination ~yes))
+            (patient_concomitant_disease_symptoms (ibs ~yes))
+            (patient_concomitant_disease_symptoms (interstitial_cystitis ~yes))
         )
     )
 
@@ -193,16 +207,18 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET = """
         (flank_pain ?v4) 
         (hematuria ?v5) 
         (frequent_urination ?v6)
+        (ibs ?v7)
+        (interstitial_cystitis ?v8)
     ) 
     
     ?f1 <-(concomitant_disease_inclusion  (meets_criteria unknown))
     
     => 
-    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6))
-    (if (>= ?num_symptoms 1) then
+    (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 ?v7 ?v8))
+    (if (>= ?num_symptoms 2) then
         (modify ?f1 (meets_criteria yes))
     )
-    (if (< ?num_symptoms 1) then
+    (if (< ?num_symptoms 2) then
         (modify ?f1 (meets_criteria no))
     )
 
@@ -231,7 +247,7 @@ DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_EXCLUSION = """
     (concomitant_disease_inclusion (meets_criteria no))
     =>
     (println "___________")
-    (println "Symptoms are consistent with neither endometriosis nor concomitant diseases that we screened for (IBS, adenomyosis, others). This is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
+    (println "Symptoms are consistent with neither endometriosis nor concomitant diseases that we screened for (IBS and interstitial cystitis). This is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
     (store_result "endo_0" "other_0")
 )
@@ -264,6 +280,34 @@ DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION = """
 """
 env.build(DEFRULE_ONLY_ENDOMETRIOSIS_EXCLUSION)
 
+DEFRULE_PHENOTYPING_STATUS = """
+(defrule endometriosis-case
+    (bind ?case
+        (logical
+            (or
+                (and
+                    (endometriosis_inclusion (meets_criteria yes))
+                    (concomitant_disease_inclusion (meets_criteria yes))
+                )
+                (and
+                    (endometriosis_inclusion (meets_criteria yes))
+                    (concomitant_disease_inclusion (meets_criteria no))
+                )
+            )
+        )
+    )
+
+    ?f1 <-(new_phenotype_status (endometriosis_status unknown))
+    =>
+    (if (= ?case 1) then
+        (modify ?f1 (endometriosis_status yes))
+    )
+    (if (= ?case 0) then
+        (modify ?f1 (endometriosis_status no))
+    )
+)
+"""
+
 # and ablation analysis
 
 # data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
@@ -278,7 +322,7 @@ patient_concomitant_disease_template = env.find_template('patient_concomitant_di
 # TESTING AND EVALUATION PART!!!
 
 TESTROWS = 10
-# data = data.iloc[:TESTROWS]
+data = data.iloc[:TESTROWS]
 
 ## LEGEND
 # A: only endo -> case
@@ -300,7 +344,7 @@ for index, row in data.iterrows():
 
     # split into endo and concomitant disease dicts
     endo_data = data.loc[index, ['abdominal_pelvic_pain', 'dysmenorrhea', 'pain_with_sex', 'dyschezia', 'dysuria', 'infertility', 'pelvic_perineal_pain', 'adenomyosis']]
-    additional_disease_data = data.loc[index, ['amenorrhea', 'constipation', 'diarrhea', 'flank_pain', 'hematuria', 'frequent_urination']]
+    additional_disease_data = data.loc[index, ['amenorrhea', 'constipation', 'diarrhea', 'flank_pain', 'hematuria', 'frequent_urination', 'ibs', 'interstitial_cystitis']]
 
     # create dictionary from current row, populated only with the symptoms I need
     endo_dict = endo_data.to_dict()
