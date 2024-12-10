@@ -4,21 +4,6 @@ import sys
 sys.path.append('./src/')
 from clips_util import print_facts, print_rules, print_templates, build_read_assert
 
-# evaluation_dict = {'only_endo_predicted':0, 'only_endo_actual':0, 'only_concomitant_predicted':0, 'only_concomitant_actual':0, 'both_endo_concomitant_predicted':0, 'both_endo_concomitant_actual':0, 'neither_endo_concomitant_predicted':0, 'neither_endo_concomitant_actual':0, 'else':0}
-
-# def store_result(*args):
-#     endo, other = args
-#     if endo == "endo_0" and other == "other_0":
-#         evaluation_dict['neither_endo_concomitant_predicted'] += 1
-#     elif endo == "endo_0" and other == "other_1":
-#         evaluation_dict['only_concomitant_predicted'] += 1
-#     elif endo == "endo_1" and other == "other_0":
-#         evaluation_dict['only_endo_predicted'] += 1
-#     elif endo == "endo_1" and other == "other_1":
-#         evaluation_dict['both_endo_concomitant_predicted'] += 1
-#     else:
-#         evaluation_dict['else'] += 1
-
 def count_symptoms(*args):
     count = 0
     for symptom in args:
@@ -179,7 +164,7 @@ env.build(DEFRULE_ENDOMETRIOSIS_INCLUSION_CRITERIA_MET)
 
 # indicates presence of symptoms that indicate no concomitant disease (along with or instead of) endometriosis
 DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_NOT_MET = """
-(defrule concomitant-inclusion-criteria-not-met "Rule to define a person as having symptom(s) not consistent with other (non-endo) disease based on inclusion criteria facts"
+(defrule concomitant-inclusion-criteria-not-met "Rule to define a person as having symptom(s) not consistent with other (non-endo) disease based on symptoms"
     (logical
         (and
             (patient_concomitant_disease_symptoms (amenorrhea ~yes))  
@@ -239,7 +224,7 @@ DEFRULE_ENDOMETRIOSIS_AND_CONCOMITANT_INCLUSION = """
     (concomitant_disease_inclusion (meets_criteria yes))
     =>
     (println "___________")
-    (println "Patient has at least 2 symptoms are consistent with both endometriosis and additional concomitant disease (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
+    (println "Patient has at least 1 symptom(s) that are consistent with both endometriosis and additional concomitant disease (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
 )
 """
@@ -263,7 +248,7 @@ DEFRULE_ONLY_ENDOMETRIOSIS_INCLUSION = """
     (concomitant_disease_inclusion (meets_criteria no))
     =>
     (println "___________")
-    (println "Patient has at least 2 symptoms that are consistent only with endometriosis and no symptoms consistent with additional diseases (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
+    (println "Patient has at least 1 symptom that is consistent only with endometriosis and no symptoms consistent with additional diseases (irritable bowel syndrome, interstitial cystitis, urinary tract stones, or a reproductive tract anomaly). The purpose of this system is to identify endometriosis cases for large-scale research studies - this is NOT intended to be a formal diagnosis; classification was made based on limited symptoms without lab tests/physical exam results and further confirmation may be necessary.")
     (println "___________")
 )
 """
@@ -324,8 +309,6 @@ DEFRULE_ENDOMETRIOSIS_CONTROL = """
 )
 """
 env.build(DEFRULE_ENDOMETRIOSIS_CONTROL)
-
-# and ablation analysis
 
 # data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/symptom_pulls/Pheno/PMBB_2.3_pheno_covars.csv'
 data_file = '/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/new_features_covars.csv'
