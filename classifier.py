@@ -199,10 +199,10 @@ DEFRULE_CONCOMITANT_DISEASE_INCLUSION_CRITERIA_MET = """
     
     => 
     (bind ?num_symptoms (count_symptoms ?v1 ?v2 ?v3 ?v4 ?v5 ?v6))
-    (if (>= ?num_symptoms 3) then
+    (if (>= ?num_symptoms 1) then
         (modify ?f1 (meets_criteria yes))
     )
-    (if (< ?num_symptoms 3) then
+    (if (< ?num_symptoms 1) then
         (modify ?f1 (meets_criteria no))
     )
 
@@ -332,6 +332,7 @@ for index, row in data.iterrows():
     patient_concomitant_disease_template.assert_fact(**other_diseases_dict)
 
     env.run()
+    print_facts(env)
 
     for idx, fact in enumerate(env.facts()):
         if idx == 0:

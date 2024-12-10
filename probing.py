@@ -35,4 +35,16 @@ for index, row in label_comparisons.iterrows():
 print(matching_counter) # 11% are misclassified in PMBB when comparing Endo ICDs to Endo Chart reviews. want to improve on this accuracy level to try and decrease what is misclassified
 # always comparing to the chart reviews
 
+            # (patient_endo_symptoms (abdominal_pelvic_pain ~yes))  
+            # (patient_endo_symptoms (dysmenorrhea ~yes))   
+            # (patient_endo_symptoms (pain_with_sex ~yes)) 
+            # (patient_endo_symptoms (dyschezia ~yes)) 
+            # (patient_endo_symptoms (dysuria ~yes)) 
+            # (patient_endo_symptoms (infertility ~yes))   
+            # (patient_endo_symptoms (pelvic_perineal_pain ~yes))
+            # (patient_endo_symptoms (adenomyosis ~yes))
+
 new_testing_data = label_comparisons.to_csv('/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/new_features_covars.csv')
+
+probe = label_comparisons[['Chart_Adeno_or_Endo', 'adenomyosis', 'dysmenorrhea', 'dyschezia', 'dysuria', 'pain_with_sex', 'infertility', 'abdominal_pelvic_pain', 'pelvic_perineal_pain']]
+probes = probe.to_csv('/project/ssverma_shared/projects/Endometriosis/Endo_RuleBased_Phenotyping/relevant_features.csv')
